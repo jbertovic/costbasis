@@ -9,7 +9,7 @@ fn buy_only_initiate_unrealized() {
     let transaction = Transaction::from("2020-01-01,long,100.0,25.0");
     let results_ur = [URealized::from("2020-01-01,100.0,-2500.0")];
     let mut holding = Holding::default();
-    let gains_r = holding.add_transaction_new(&transaction);
+    let gains_r = holding.add_transaction(&transaction);
     assert_eq!(gains_r, vec!());
     assert_eq!(holding.inventory(), results_ur);
 
@@ -30,13 +30,13 @@ fn multiple_buy_unrealized() {
         URealized::from("2020-03-01,100.0,-3000.0"),
     ];
     let mut holding = Holding::default();
-    let gains_r = holding.extend_transactions_new(&transactions);
+    let gains_r = holding.extend_transactions(&transactions);
     assert_eq!(gains_r, vec!());
     assert_eq!(holding.inventory(), results_ur);
 
     // one by one
     let mut holding = Holding::new(&transactions[0]);
-    let gains2_r = holding.extend_transactions_new(&transactions[1..]);
+    let gains2_r = holding.extend_transactions(&transactions[1..]);
     assert_eq!(gains2_r, vec!());
     assert_eq!(holding.inventory(), results_ur);
 }
@@ -51,7 +51,7 @@ fn buy_sell_only_realized() {
         "2020-02-01,-100.0,3500.0,2020-01-01,100.0,-2500.0,1000.0",
     )];
     let mut holding = Holding::new(&transactions[0]);
-    let gains_r = holding.add_transaction_new(&transactions[1]);
+    let gains_r = holding.add_transaction(&transactions[1]);
     assert_eq!(gains_r, results_r);
     assert_eq!(holding.inventory(), vec!());
 }
@@ -67,13 +67,13 @@ fn buy_sell_realized_and_unrealized_left() {
         "2020-02-01,-100.0,3500.0,2020-01-01,100.0,-2500.0,1000.0",
     )];
     let mut holding = Holding::new(&transactions[0]);
-    let gains_r = holding.add_transaction_new(&transactions[1]);
+    let gains_r = holding.add_transaction(&transactions[1]);
     assert_eq!(gains_r, results_r);
     assert_eq!(holding.inventory(), results_ur);
 }
 
 #[test]
-fn buy_sell_realized_and_unrealized_new() {
+fn buy_sell_realized_and_unrealized() {
     let transactions = [
         Transaction::from("2020-01-01,long,100.0,25.0"),
         Transaction::from("2020-02-01,short,200.0,35.0"),
@@ -83,7 +83,7 @@ fn buy_sell_realized_and_unrealized_new() {
         "2020-02-01,-100.0,3500.0,2020-01-01,100.0,-2500.0,1000.0",
     )];
     let mut holding = Holding::new(&transactions[0]);
-    let gains_r = holding.add_transaction_new(&transactions[1]);
+    let gains_r = holding.add_transaction(&transactions[1]);
     assert_eq!(gains_r, results_r);
     assert_eq!(holding.inventory(), results_ur);
     assert_eq!(holding.direction(), Some(InventoryType::Short));
@@ -105,7 +105,7 @@ fn buy_sell_realized_and_unrealized_starting_with_multiple_unrealized() {
         Realized::from("2020-04-01,-50.0,1750.0,2020-03-01,50.0,-1250.0,500.0"),
     ];
 
-    let gains_r = holding.add_transaction_new(&transaction);
+    let gains_r = holding.add_transaction(&transaction);
     assert_eq!(gains_r, results_r);
     assert_eq!(holding.inventory(), results_ur);
 }
@@ -128,7 +128,7 @@ fn open_close_more_than_once_zero_balance_twice() {
         Realized::from("2020-06-01,-100.0,3500.0,2020-05-01,100.0,-2500.0,1000.0"),
     ];
 
-    let gains_r = holding.extend_transactions_new(&transactions);
+    let gains_r = holding.extend_transactions(&transactions);
     assert_eq!(gains_r, results_r);
     assert!(holding.inventory().is_empty());
     assert_eq!(holding.direction(), None);
@@ -148,7 +148,7 @@ fn transactions_that_include_add_transfers() {
         Realized::from("2020-07-01,-100.0,3500.0,2020-05-01,100.0,-2500.0,1000.0"),
         Realized::from("2020-07-01,-100.0,3500.0,2020-06-01,100.0,-2500.0,1000.0"),
     ];
-    let gains_r = holding.extend_transactions_new(&transactions);
+    let gains_r = holding.extend_transactions(&transactions);
     assert_eq!(gains_r, results_r);
     assert!(holding.inventory().is_empty());
     assert_eq!(holding.direction(), None);
@@ -168,7 +168,7 @@ fn transactions_that_include_remove_transfers_with_zero_gain() {
         Realized::from("2020-07-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0"),
         Realized::from("2020-07-01,-100.0,3500.0,2020-05-01,100.0,-2500.0,1000.0"),
     ];
-    let gains_r = holding.extend_transactions_new(&transactions);
+    let gains_r = holding.extend_transactions(&transactions);
     assert_eq!(gains_r, results_r);
     assert!(holding.inventory().is_empty());
     assert_eq!(holding.direction(), None);
@@ -188,23 +188,23 @@ fn transactions_that_include_remove_transfers_with_zero_gain() {
 //     ];
 //     let results_ur = [URealized::from("2020-03-01,100.0,-3000.0")];
 
-//     let gains_r = holding.extend_transactions_new(&transactions[0..2]);
+//     let gains_r = holding.extend_transactions(&transactions[0..2]);
 //     assert!(gains_r.is_empty());
 
 //     // partial send
-//     let gains_r = holding.add_transaction_new(&transactions[3]);
+//     let gains_r = holding.add_transaction(&transactions[3]);
 //     assert_eq!(gains_r, vec!(
 //         Realized::from("2020-06-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0")));
 
 //     // larger send
-//     let gains_r = holding.add_transaction_new(&transactions[4]);
+//     let gains_r = holding.add_transaction(&transactions[4]);
 //     assert_eq!(gains_r, vec!(
 //         Realized::from("2020-07-01,-50.0,1000.0,2020-03-01,100.0,-1000.0,0.0"),
 //         Realized::from("2020-07-01,-50.0,1250.0,2020-04-01,100.0,-1250.0,0.0"),
 //     ));
 
 //     // equal send
-//     let gains_r = holding.add_transaction_new(&transactions[5]);
+//     let gains_r = holding.add_transaction(&transactions[5]);
 //     assert_eq!(gains_r, vec!(
 //         Realized::from("2020-08-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0")));
 
