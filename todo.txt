@@ -1,0 +1,18 @@
+In General need to think about error checking.
+
+realized.rs
+- Proceeds always on the left
+- Does quantity need to be on both sides?  limit to 1
+- check that realizedcompact from realized has same date
+
+holding.rs
+- refactor add - has duplication in function -- maybe split it up a bit more, has too much responsibility
+// TODO: Holding Summary (sum all quantity and basis and price per unit added?)
+// TODO: Allow LIFO vs FIFO
+// TODO: is it possible to add lot selection?  how would this be defined
+// - Remove and Inventory change are in the correct direction
+
+unrealized.rs
+- UR inventory From<&[URealized]> need to check that all volume is in the same direction
+
+
