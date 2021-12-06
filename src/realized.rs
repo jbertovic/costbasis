@@ -25,6 +25,16 @@ impl Realized {
             6: inv_ur.basis() + inv.basis(),
         }
     }
+
+    pub fn zero_profit(&mut self) {
+        self.2 = -self.5;
+        self.6 = 0.0;
+    }
+
+    pub fn zero_value(&mut self) {
+        self.2 = 0.0;
+        self.6 = self.5;
+    }
 }
 
 impl From<&str> for Realized {

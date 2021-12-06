@@ -54,20 +54,6 @@ impl Holding {
         gains
     }
 
-            // InventoryType::Remove => {
-            //     // removes will be treated as zero profit/loss gain
-            //     // other options in the future are at zero cost, market cost    
-            //     let _remove_basis = self.remove_inventory(-inv.quantity());
-            //     if self.config.contains("ADD_REALIZED_FOR_REMOVED") {
-            //         // show the realized zero gain
-            //         unimplemented!()
-            //     } else {
-            //         // ignore reporting realized with zero gains with inventory
-            //         // removed at cost
-            //         vec!()
-            //     }
-            // },
-
     // ASSUMES FIFO FOR NOW -> potential options for LIFO or LOTS or Avg Cost
     // need to check to see if its Inventory Add or Remove
     // vs a Buy/Sell Transaction
@@ -97,7 +83,7 @@ impl Holding {
             }
             // Remove is handled differently depending on Configuration
             if inv.itype() == InventoryType::Remove {
-                vec!()
+                self.mod_removed(realized_return)
             } else {
                 realized_return
             }
@@ -115,6 +101,25 @@ impl Holding {
         }
         gains_r
     }
+
+    fn mod_removed(&self, mut realized: Vec<Realized>) -> Vec<Realized>
+    {
+        if self.config.contains("REALIZED_REMOVED_VALUE_AT_COST") {
+            // shows removed realized at cost basis and zero gains
+            realized.iter_mut().for_each(|r| r.zero_profit());
+            realized           
+        } else if self.config.contains("REMOVED_VALUE_AT_MARKET") {
+            // assumes market price is in inventory change data as price or basis
+            realized
+        } else if self.config.contains("REMOVED_VALUE_AT_ZERO") {
+            // Force proceeds at zero value
+            realized.iter_mut().for_each(|r| r.zero_value());
+            realized
+        } else {
+            vec!()
+        }
+    }
+
 
     pub fn add_inventory(&mut self, ur: URealized) {
         if self.direction.is_none() {

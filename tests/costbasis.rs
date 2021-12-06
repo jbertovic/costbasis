@@ -174,39 +174,113 @@ fn transactions_that_include_remove_transfers_with_zero_gain() {
     assert_eq!(holding.direction(), None);
 }
 
-// #[test]
-// fn remove_inventory_with_gain_output() {
-//     let mut holding = Holding::default();
-//     holding.add_config("ADD_REALIZED_FOR_REMOVED");
-//     let transactions = [
-//         Transaction::from("2020-03-01,long,100.0,20.0"),
-//         Transaction::from("2020-04-01,Receive,100.0,25.0"),
-//         Transaction::from("2020-05-01,long,100.0,30.0"),
-//         Transaction::from("2020-06-01,Send,50.0,0.0"),
-//         Transaction::from("2020-07-01,Send,100.0,35.0"),
-//         Transaction::from("2020-08-01,Send,50.0,35.0"),
-//     ];
-//     let results_ur = [URealized::from("2020-03-01,100.0,-3000.0")];
+#[test]
+fn remove_inventory_with_zerogain_show_output() {
+    let mut holding = Holding::default();
+    holding.add_config("REALIZED_REMOVED_VALUE_AT_COST");
+    let transactions = [
+        Transaction::from("2020-03-01,long,100.0,20.0"),
+        Transaction::from("2020-04-01,Receive,100.0,25.0"),
+        Transaction::from("2020-05-01,long,100.0,30.0"),
+        Transaction::from("2020-06-01,Send,50.0,35.0"),
+        Transaction::from("2020-07-01,Send,100.0,35.0"),
+        Transaction::from("2020-08-01,Send,50.0,35.0"),
+    ];
+    let results_ur = [URealized::from("2020-05-01,100.0,-3000.0")];
 
-//     let gains_r = holding.extend_transactions(&transactions[0..2]);
-//     assert!(gains_r.is_empty());
+    let gains_r = holding.extend_transactions(&transactions[0..=2]);
+    assert!(gains_r.is_empty());
 
-//     // partial send
-//     let gains_r = holding.add_transaction(&transactions[3]);
-//     assert_eq!(gains_r, vec!(
-//         Realized::from("2020-06-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0")));
+    // partial send
+    let gains_r = holding.add_transaction(&transactions[3]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-06-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0")));
 
-//     // larger send
-//     let gains_r = holding.add_transaction(&transactions[4]);
-//     assert_eq!(gains_r, vec!(
-//         Realized::from("2020-07-01,-50.0,1000.0,2020-03-01,100.0,-1000.0,0.0"),
-//         Realized::from("2020-07-01,-50.0,1250.0,2020-04-01,100.0,-1250.0,0.0"),
-//     ));
+    // larger send
+    let gains_r = holding.add_transaction(&transactions[4]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-07-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0"),
+        Realized::from("2020-07-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0"),
+    ));
 
-//     // equal send
-//     let gains_r = holding.add_transaction(&transactions[5]);
-//     assert_eq!(gains_r, vec!(
-//         Realized::from("2020-08-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0")));
+    // equal send
+    let gains_r = holding.add_transaction(&transactions[5]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-08-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0")));
 
-//     assert_eq!(holding.inventory(), results_ur);
-// }
+    assert_eq!(holding.inventory(), results_ur);
+}
+
+#[test]
+fn remove_inventory_with_gain_at_market() {
+    let mut holding = Holding::default();
+    holding.add_config("REMOVED_VALUE_AT_MARKET");
+    let transactions = [
+        Transaction::from("2020-03-01,long,100.0,20.0"),
+        Transaction::from("2020-04-01,Receive,100.0,25.0"),
+        Transaction::from("2020-05-01,long,100.0,30.0"),
+        Transaction::from("2020-06-01,Send,50.0,35.0"),
+        Transaction::from("2020-07-01,Send,100.0,35.0"),
+        Transaction::from("2020-08-01,Send,50.0,35.0"),
+    ];
+    let results_ur = [URealized::from("2020-05-01,100.0,-3000.0")];
+
+    let gains_r = holding.extend_transactions(&transactions[0..=2]);
+    assert!(gains_r.is_empty());
+
+    // partial send
+    let gains_r = holding.add_transaction(&transactions[3]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-06-01,-50.0,1750.0,2020-03-01,50.0,-1000.0,750.0")));
+
+    // larger send
+    let gains_r = holding.add_transaction(&transactions[4]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-07-01,-50.0,1750.0,2020-03-01,50.0,-1000.0,750.0"),
+        Realized::from("2020-07-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0"),
+    ));
+
+    // equal send
+    let gains_r = holding.add_transaction(&transactions[5]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-08-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0")));
+
+    assert_eq!(holding.inventory(), results_ur);
+}
+
+#[test]
+fn remove_inventory_with_gain_at_zero_value() {
+    let mut holding = Holding::default();
+    holding.add_config("REMOVED_VALUE_AT_ZERO");
+    let transactions = [
+        Transaction::from("2020-03-01,long,100.0,20.0"),
+        Transaction::from("2020-04-01,Receive,100.0,25.0"),
+        Transaction::from("2020-05-01,long,100.0,30.0"),
+        Transaction::from("2020-06-01,Send,50.0,35.0"),
+        Transaction::from("2020-07-01,Send,100.0,35.0"),
+        Transaction::from("2020-08-01,Send,50.0,35.0"),
+    ];
+    let results_ur = [URealized::from("2020-05-01,100.0,-3000.0")];
+
+    let gains_r = holding.extend_transactions(&transactions[0..=2]);
+    assert!(gains_r.is_empty());
+
+    // partial send
+    let gains_r = holding.add_transaction(&transactions[3]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-06-01,-50.0,0.0,2020-03-01,50.0,-1000.0,-1000.0")));
+
+    // larger send
+    let gains_r = holding.add_transaction(&transactions[4]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-07-01,-50.0,0.0,2020-03-01,50.0,-1000.0,-1000.0"),
+        Realized::from("2020-07-01,-50.0,0.0,2020-04-01,50.0,-1250.0,-1250.0"),
+    ));
+
+    // equal send
+    let gains_r = holding.add_transaction(&transactions[5]);
+    assert_eq!(gains_r, vec!(
+        Realized::from("2020-08-01,-50.0,0.0,2020-04-01,50.0,-1250.0,-1250.0")));
+
+    assert_eq!(holding.inventory(), results_ur);
+}
