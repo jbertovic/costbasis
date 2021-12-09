@@ -11,7 +11,7 @@ Transaction - is a record of inventory change. Can be replaced by a user defined
 
 Assumes FIFO for maintaining holding inventory. Future plans to add Lot, Avg Weight, and LIFO.
 
-Look at examples `cryptogains` and `cryptodetails`.  This uses a csv of my Crypto transactions which is culmination of wallet, coinbase, and coinbase pro transactions.  I took csv reports from each of them and data wrangled it down to transaction inventory changes.  All transaction fees in ETH on the ethereum network are indicated as REMOVE in the data.  Internal Sends and Receives are not included as they aren't taxable events or inventory changes.
+Look at examples `cryptogains` and `cryptodetails`.  This uses a csv of my Crypto transactions which is culmination of wallet, coinbase, and coinbase pro transactions.  I took csv reports from each of them and data wrangled it down to transaction inventory changes - removed some transactions so its not as large for an example.  All transaction fees in ETH on the ethereum network are indicated as REMOVE in the data.  Internal Sends and Receives are not included as they aren't taxable events or inventory changes.
 
 Also, you can look at some of the tests under `./tests/costbasis.rs`
 
