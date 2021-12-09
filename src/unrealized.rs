@@ -2,12 +2,15 @@ use crate::inventory::{Inventory, InventoryType, VolumeSplit};
 use chrono::NaiveDate;
 use std::fmt;
 
-/// open date, open quantity, open value
-/// quantity is positive for long and negative for short, value is full basis not just price
+/// Holds unrealized inventory. 
+/// 
+/// Quantity is positive for long and negative for short, value is full basis not just price.
+// open date, open quantity, open value
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct URealized(NaiveDate, f64, f64);
 
 impl From<&str> for URealized {
+    /// in the form of `"yy-mm-dd,quantity,basis"`
     fn from(s: &str) -> Self {
         let field: Vec<&str> = s.split(',').collect();
         URealized {

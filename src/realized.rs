@@ -5,7 +5,11 @@ use crate::unrealized::URealized;
 use chrono::NaiveDate;
 use std::fmt;
 
-/// close date, close quantity, close value, open date, open quantity, open value, realized gain
+/// Holds a realized match of open inventory change and close inventory change along with the 
+/// realized gain or loss.
+/// 
+/// For now use Display trait to view
+// close date, close quantity, close value, open date, open quantity, open value, realized gain
 #[derive(Debug, PartialEq)]
 pub struct Realized(NaiveDate, f64, f64, NaiveDate, f64, f64, f64);
 
@@ -26,11 +30,12 @@ impl Realized {
         }
     }
 
+    // make crate private - only holding uses this function
     pub fn zero_profit(&mut self) {
         self.2 = -self.5;
         self.6 = 0.0;
     }
-
+    // make crate private - only holding uses this function
     pub fn zero_value(&mut self) {
         self.2 = 0.0;
         self.6 = self.5;
@@ -59,7 +64,9 @@ impl fmt::Display for Realized {
     }
 }
 
-/// sales date, quantity, proceeds, costs, pl
+/// A compact form of realized that may have multiple open dates.  Groups all open basis transactions based on the
+/// close date.  This helps when you have for example one sale which covers multiple buys on a variety of dates.
+// sales date, quantity, proceeds, costs, pl
 #[derive(Debug, PartialEq)]
 pub struct RealizedCompact(NaiveDate, f64, f64, String, f64, f64);
 
@@ -95,6 +102,7 @@ impl From<&[Realized]> for RealizedCompact {
     }
 }
 
+/// Convert slice of `Realized` into compact form by grouping by close date
 pub fn realized_to_compact(realized: &[Realized]) -> Vec<RealizedCompact> {
     // group by date - assumes slice is ordered
     // strip out column of dates to group by
@@ -122,6 +130,7 @@ where T: Eq + Hash + Copy
     slices_index_group  
 }
 
+/// Total realized is the sum of all profit / loss in the slice of `Realized`
 pub fn total_realized(r: &[Realized]) -> f64 {
     r.iter().map(|r|r.6).sum()
 }

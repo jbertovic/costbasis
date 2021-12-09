@@ -1,5 +1,8 @@
 use chrono::NaiveDate;
 
+/// Trait that identifies an inventory change.  
+/// 
+/// Implementation of this trait is needed when adding transactions to a holding.
 pub trait Inventory {
     fn basis(&self) -> f64;
 
@@ -23,6 +26,7 @@ pub trait VolumeSplit<T> {
     fn split(&self, quantity: f64) -> (T, T);
 }
 
+/// Inventory Types to identify the type of inventory change.
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum InventoryType {
     Long,

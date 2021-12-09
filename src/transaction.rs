@@ -15,17 +15,18 @@ impl std::str::FromStr for InventoryType {
     }
 }
 
-/// Transaction
-/// transaction date, transaction type, quantity, price
+/// Transaction used to identify inventory changes
 /// 
 /// Implements Inventory and VolumeSplit traits to be used in Holdings Struct.
 /// 
 /// User can implement their own Transaction Struct by implementing both Inventory and VolumeSplit
-/// 
+///
+// transaction date, transaction type, quantity, price
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Transaction(NaiveDate, InventoryType, f64, f64);
 
 impl From<&str> for Transaction {
+    /// in the form of `"yyyy-mm-dd,inventory_type,quantity,price"`
     fn from(s: &str) -> Self {
         let field: Vec<&str> = s.split(',').collect();
         Transaction {
@@ -38,7 +39,7 @@ impl From<&str> for Transaction {
 }
 
 impl Transaction {
-    pub fn quant_multiplier(&self) -> f64 {
+    fn quant_multiplier(&self) -> f64 {
         match self.1 {
             InventoryType::Long | InventoryType::Add => 1.0,
             InventoryType::Short | InventoryType::Remove => -1.0,

@@ -7,8 +7,10 @@ use std::fmt;
 
 /// Holding contains a set of `URealized` inventory.
 /// 
-/// add_transaction -> create matching sizes -> 
-///     1) add to position and create unrealized OR 2) close position and create realized
+/// Inventory changes added in the opposite direction of the holding, the function will seek to first modify
+/// sizes between the added transaction inventory change and the next inventory held in the holding so
+/// they match.  The match allows a gain/loss to be realized with both an open and close of a transaction.
+/// If the inventory change is adding to inventory then no match is needed and the inventory is added to the holding.
 /// 
 /// Adding inventory such as a Deposit/Transfer of Stock or Receiving Crypto must include a basis
 /// and is treated the same as a Long Transaction
@@ -16,12 +18,13 @@ use std::fmt;
 /// Removing inventory such as a Withdraw of stock or Sending Crypto has a few options
 /// when treating if it creates gain or not
 /// 
-/// Default => removal of inventory is removed at current cost basis and net of zero with no realized returned
-/// ADD_REALIZED_FOR_REMOVED => same as default but will respond with zero gain realized
-/// REMOVED_VALUE_AT_MARKET => assumes market price is in inventory change data as price or basis
-/// REMOVED_VALUE_AT_ZERO => force value at zero proceeds taking a net loss
+/// - Default => removal of inventory is removed at current cost basis and net of zero with no realized returned
+/// - `ADD_REALIZED_FOR_REMOVED` => same as default but will respond with zero gain realized
+/// - `REMOVED_VALUE_AT_MARKET` => assumes market price is in inventory change data as price or basis
+/// - `REMOVED_VALUE_AT_ZERO` => force value at zero proceeds taking a net loss
 /// 
 /// All inventory is treated as FIFO
+/// 
 /// Future options LIFO, Avg Price, HIFO?
 /// 
 #[derive(Debug, Default)]
@@ -57,11 +60,8 @@ impl Holding {
     }
 
     // ASSUMES FIFO FOR NOW -> potential options for LIFO or LOTS or Avg Cost
-    // need to check to see if its Inventory Add or Remove
-    // vs a Buy/Sell Transaction
-    // Buy is similar to Add but Remove can create different types of
-    //     gains depending on Accounting rules; gifting, transaction fees (crypto)
     /// Transaction is an inventory change of Add/Deposit/Receive, Remove/Use/Send, Buy/Long, Short/Sell
+    /// Transactions/Inventory Change must be sorted by date
     pub fn add_transaction<T>(&mut self, inv: &T) -> Vec<Realized>
     where
         T: Inventory + VolumeSplit<T> + Copy,
@@ -91,7 +91,7 @@ impl Holding {
             }
         }
     }
-
+    /// Adds a slice or series of inventory changes.  The series must be sorted by date.
     pub fn extend_transactions<T>(&mut self, invs: &[T]) -> Vec<Realized>
     where
         T: Inventory + VolumeSplit<T> + Copy,
@@ -138,10 +138,6 @@ impl Holding {
         Realized::match_close(inv, &unrealized)
     }
 
-    pub fn direction(&self) -> Option<InventoryType> {
-        self.direction.clone()
-    }
-
     fn match_direction<T>(&self, inv: &T) -> bool 
     where T: Inventory,
     {
@@ -152,10 +148,17 @@ impl Holding {
         }
     }
 
+    /// Identifying if the holding is currently in long or short position
+    pub fn direction(&self) -> Option<InventoryType> {
+        self.direction.clone()
+    }
+
+    /// Return current inventory
     pub fn inventory(&self) -> Vec<URealized> {
         self.unrealized.clone()
     }
 
+    /// Current positon of holding: `(quantity, price, basis)`
     pub fn position(&self) -> (f64, f64, f64) {
         // return quantity, price per unit, total basis
         let mut q = 0.0;
@@ -201,6 +204,9 @@ impl Holding {
         }
     }
 
+    /// Add configuration to holding.
+    /// 
+    /// Only options are `ADD_REALIZED_FOR_REMOVED`, `REMOVED_VALUE_AT_MARKET`, and `REMOVED_VALUE_AT_ZERO`
     pub fn add_config(&mut self, c: &str) {
         self.config.insert(c.to_owned());
     }

@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut symbol_holding_realized: HashMap<String, (Holding, Vec<Realized>)> = HashMap::new();
     for (symbol, transactions) in symbol_transaction_data.iter() {
         let mut holding = Holding::default();
-        //holding.add_config("REALIZED_REMOVED_VALUE_AT_COST");
+        holding.add_config("REALIZED_REMOVED_VALUE_AT_COST");
         let realized = holding.extend_transactions(transactions);
         symbol_holding_realized.insert(symbol.to_owned(),(holding, realized));
     }
