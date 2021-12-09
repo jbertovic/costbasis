@@ -1,5 +1,6 @@
 use crate::inventory::{Inventory, InventoryType, VolumeSplit};
 use chrono::NaiveDate;
+use std::fmt;
 
 /// open date, open quantity, open value
 /// quantity is positive for long and negative for short, value is full basis not just price
@@ -24,6 +25,13 @@ impl URealized {
             1: quantity,
             2: basis,
         }
+    }
+}
+
+impl fmt::Display for URealized {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "URealized: {}, quantity: {:.4}, price: {:.4}, basis: {:.4}", 
+            self.0, self.1, -self.2/self.1, self.2)
     }
 }
 

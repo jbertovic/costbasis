@@ -52,6 +52,13 @@ impl From<&str> for Realized {
     }
 }
 
+impl fmt::Display for Realized {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "close_date: {} quantity:{:.4}, proceeds:{:.2}, open_date: {}, cost_basis:{:.2}, gain_loss:{:.2}", 
+            self.0, self.1, self.2, self.3, self.5, self.6)
+    }
+}
+
 /// sales date, quantity, proceeds, costs, pl
 #[derive(Debug, PartialEq)]
 pub struct RealizedCompact(NaiveDate, f64, f64, String, f64, f64);

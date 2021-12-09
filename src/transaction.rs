@@ -8,14 +8,20 @@ impl std::str::FromStr for InventoryType {
         match s {
             "Long" | "long" | "buy" | "BUY" | "b" | "l" => Ok(InventoryType::Long),
             "Short" | "short" | "sell" | "SELL" | "s" => Ok(InventoryType::Short),
-            "Receive" | "Transfer_In" | "RECEIVE" => Ok(InventoryType::Add),
-            "Send" | "Transfer_Out" | "SEND" => Ok(InventoryType::Remove),
+            "Receive" | "Transfer_In" | "RECEIVE" | "Add" | "ADD" => Ok(InventoryType::Add),
+            "Send" | "Transfer_Out" | "SEND" | "Remove" | "REMOVE" => Ok(InventoryType::Remove),
             _ => Err(format!("'{}' is not a valid value for InventoryType", s)),
         }
     }
 }
 
+/// Transaction
 /// transaction date, transaction type, quantity, price
+/// 
+/// Implements Inventory and VolumeSplit traits to be used in Holdings Struct.
+/// 
+/// User can implement their own Transaction Struct by implementing both Inventory and VolumeSplit
+/// 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Transaction(NaiveDate, InventoryType, f64, f64);
 

@@ -5,22 +5,24 @@ use crate::unrealized::URealized;
 use crate::MARGIN_ERROR_QUANTITY;
 use std::fmt;
 
-
 /// Holding contains a set of `URealized` inventory.
 /// 
-/// add_transaction -> create matching size -> 
+/// add_transaction -> create matching sizes -> 
 ///     1) add to position and create unrealized OR 2) close position and create realized
 /// 
-/// Adding inventory such as a Deposit/Transfer of Stock or Receiving Coin must include a basis
+/// Adding inventory such as a Deposit/Transfer of Stock or Receiving Crypto must include a basis
 /// and is treated the same as a Long Transaction
 /// 
 /// Removing inventory such as a Withdraw of stock or Sending Crypto has a few options
 /// when treating if it creates gain or not
 /// 
-/// Default => removal of inventory is removed at current cost basis, no response
-/// ADD_REALIZED_FOR_REMOVED => same as default but will respond with zero gain
+/// Default => removal of inventory is removed at current cost basis and net of zero with no realized returned
+/// ADD_REALIZED_FOR_REMOVED => same as default but will respond with zero gain realized
+/// REMOVED_VALUE_AT_MARKET => assumes market price is in inventory change data as price or basis
+/// REMOVED_VALUE_AT_ZERO => force value at zero proceeds taking a net loss
 /// 
 /// All inventory is treated as FIFO
+/// Future options LIFO, Avg Price, HIFO?
 /// 
 #[derive(Debug, Default)]
 pub struct Holding {
@@ -121,43 +123,11 @@ impl Holding {
     }
 
 
-    pub fn add_inventory(&mut self, ur: URealized) {
+    fn add_inventory(&mut self, ur: URealized) {
         if self.direction.is_none() {
             self.direction = Some(ur.itype());
         }
         self.unrealized.push(ur);
-    }
-
-    /// remove inventory and return cost basis that is removed from inventory
-    pub fn remove_inventory(&mut self, quantity: f64) -> f64 {
-        let mut removed_basis = 0.0;
-        let mut quantity_remaining = quantity;
-
-        // start at the top of the que and remove until quantity is reached
-        loop {
-            if (self.unrealized[0].quantity() - quantity_remaining).abs() < MARGIN_ERROR_QUANTITY {
-                removed_basis += self.unrealized[0].basis();
-                self.unrealized.remove(0);
-                break;
-            } else if self.unrealized[0].quantity() < quantity_remaining {
-                removed_basis += self.unrealized[0].basis();
-                quantity_remaining -= self.unrealized[0].quantity();
-                self.unrealized.remove(0);
-            } else {
-                let basis =
-                    self.unrealized[0].basis() / self.unrealized[0].quantity() * quantity_remaining;
-                removed_basis += basis;
-                self.unrealized[0] = URealized::new(
-                    self.unrealized[0].date(),
-                    self.unrealized[0].quantity() - quantity_remaining,
-                    self.unrealized[0].basis() - basis,
-                );
-                break;
-            }
-        }
-        // if empty than reset direction
-        self.check_zero_reset();
-        removed_basis
     }
 
     fn match_close<T>(&mut self, inv: &T) -> Realized 
@@ -280,56 +250,6 @@ mod tests {
         holding.add_inventory(URealized::from("2020-03-01,100.0,-2500.0"));
 
         assert_eq!(holding.inventory(), results_ur);
-    }
-
-    #[test]
-    fn remove_inventory_with_transfer_of_basis() {
-        let starting_ur = [
-            URealized::from("2020-01-01,100.0,-2500.0"),
-            URealized::from("2020-02-01,200.0,-6000.0"),
-            URealized::from("2020-03-01,300.0,-9000.0"),
-        ];
-        let mut holding = Holding::from(&starting_ur[..]);
-        let results_ur = [URealized::from("2020-03-01,300.0,-9000.0")];
-
-        // partial remove
-        let removed_basis = holding.remove_inventory(50.0);
-        assert_eq!(removed_basis, -1250.0);
-
-        // larger remove
-        let removed_basis = holding.remove_inventory(150.0);
-        assert_eq!(removed_basis, -4250.0);
-
-        // equal remove
-        let removed_basis = holding.remove_inventory(100.0);
-        assert_eq!(removed_basis, -3000.0);
-
-        assert_eq!(holding.inventory(), results_ur);
-    }
-
-    #[test]
-    fn remove_all_inventory() {
-        let starting_ur = [
-            URealized::from("2020-01-01,100.0,-2500.0"),
-            URealized::from("2020-02-01,200.0,-6000.0"),
-        ];
-        let mut holding = Holding::from(&starting_ur[..]);
-        let removed_basis = holding.remove_inventory(300.0);
-        assert_eq!(removed_basis, -8500.0);
-        assert!(holding.inventory().is_empty());
-        assert_eq!(holding.direction(), None);
-    }
-
-    #[test]
-    fn working_small_quantities_removed() {
-        let starting_ur = [
-            URealized::from("2020-01-01,0.000000433,-0.032475"),
-        ];
-        let mut holding = Holding::from(&starting_ur[..]);
-        let removed_basis = holding.remove_inventory(0.00000043301);
-        assert_eq!(removed_basis, -0.032475);
-        assert!(holding.inventory().is_empty());
-        assert_eq!(holding.direction(), None);
     }
 
     #[test]
