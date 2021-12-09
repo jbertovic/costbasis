@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 
 /// Trait that identifies an inventory change.  
-/// 
+///
 /// Implementation of this trait is needed when adding transactions to a holding.
 pub trait Inventory {
     fn basis(&self) -> f64;
@@ -10,7 +10,7 @@ pub trait Inventory {
 
     fn date(&self) -> NaiveDate;
 
-    fn itype(&self) -> InventoryType; 
+    fn itype(&self) -> InventoryType;
 
     fn direction_type(&self) -> InventoryType {
         if self.quantity() > 0.0 {
@@ -34,4 +34,3 @@ pub enum InventoryType {
     Add,
     Remove,
 }
-

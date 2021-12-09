@@ -1,13 +1,13 @@
-use std::hash::Hash;
-use std::collections::HashMap;
 use crate::inventory::Inventory;
 use crate::unrealized::URealized;
 use chrono::NaiveDate;
+use std::collections::HashMap;
 use std::fmt;
+use std::hash::Hash;
 
-/// Holds a realized match of open inventory change and close inventory change along with the 
+/// Holds a realized match of open inventory change and close inventory change along with the
 /// realized gain or loss.
-/// 
+///
 /// For now use Display trait to view
 // close date, close quantity, close value, open date, open quantity, open value, realized gain
 #[derive(Debug, PartialEq)]
@@ -78,15 +78,18 @@ impl RealizedCompact {
             2: proceeds,
             3: open_dates,
             4: costs,
-            5: proceeds+costs,
+            5: proceeds + costs,
         }
     }
 }
 
 impl fmt::Display for RealizedCompact {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "close_date: {} quantity:{:.4}, proceeds:{:.2}, cost_basis:{:.2}, gain_loss:{:.2}", 
-            self.0, self.1, self.2, self.4, self.5)
+        write!(
+            f,
+            "close_date: {} quantity:{:.4}, proceeds:{:.2}, cost_basis:{:.2}, gain_loss:{:.2}",
+            self.0, self.1, self.2, self.4, self.5
+        )
     }
 }
 
@@ -108,14 +111,18 @@ pub fn realized_to_compact(realized: &[Realized]) -> Vec<RealizedCompact> {
     // strip out column of dates to group by
     let dates: Vec<NaiveDate> = realized.iter().map(|r| r.0).collect();
     let group_index = group_by_index(&dates);
-    group_index.iter().map(|i| RealizedCompact::from(&realized[i.0..i.1])).collect()
+    group_index
+        .iter()
+        .map(|i| RealizedCompact::from(&realized[i.0..i.1]))
+        .collect()
 }
 
 //https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=304098b59de431c9d77a537a88d8f269
-fn group_by_index<T>(s: &[T]) -> Vec<(usize,usize)> 
-where T: Eq + Hash + Copy
+fn group_by_index<T>(s: &[T]) -> Vec<(usize, usize)>
+where
+    T: Eq + Hash + Copy,
 {
-    let mut index: HashMap<T,usize> = HashMap::new();
+    let mut index: HashMap<T, usize> = HashMap::new();
     for (i, g) in s.iter().enumerate() {
         if !index.contains_key(g) {
             index.insert(*g, i);
@@ -123,25 +130,28 @@ where T: Eq + Hash + Copy
     }
     let mut slices_index: Vec<usize> = index.into_values().collect();
     slices_index.sort_unstable();
-    
+
     // combine into start and end of each slice
-    let mut slices_index_group: Vec<_> = slices_index.iter().copied().zip(slices_index[1..].iter().copied()).collect();
+    let mut slices_index_group: Vec<_> = slices_index
+        .iter()
+        .copied()
+        .zip(slices_index[1..].iter().copied())
+        .collect();
     slices_index_group.push((*slices_index.last().unwrap(), s.len()));
-    slices_index_group  
+    slices_index_group
 }
 
 /// Total realized is the sum of all profit / loss in the slice of `Realized`
 pub fn total_realized(r: &[Realized]) -> f64 {
-    r.iter().map(|r|r.6).sum()
+    r.iter().map(|r| r.6).sum()
 }
-
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
 
-    fn set_realized() -> [Realized;5] {
+    fn set_realized() -> [Realized; 5] {
         [
             Realized::from("2020-04-01,-100.0,3500.0,2020-01-01,100.0,-2500.0,1000.0"),
             Realized::from("2020-04-01,-100.0,3500.0,2020-02-01,100.0,-2500.0,1000.0"),
@@ -154,9 +164,27 @@ mod tests {
     #[test]
     fn given_array_of_realized_group_by_close_date() {
         let result = [
-            RealizedCompact::new(NaiveDate::from_ymd(2020,4,1), 200.0, 7000.0, String::new(), -5000.0),
-            RealizedCompact::new(NaiveDate::from_ymd(2020,6,1), 100.0, 3500.0, String::new(), -2500.0),
-            RealizedCompact::new(NaiveDate::from_ymd(2020,7,1), 200.0, 7000.0, String::new(), -5000.0),
+            RealizedCompact::new(
+                NaiveDate::from_ymd(2020, 4, 1),
+                200.0,
+                7000.0,
+                String::new(),
+                -5000.0,
+            ),
+            RealizedCompact::new(
+                NaiveDate::from_ymd(2020, 6, 1),
+                100.0,
+                3500.0,
+                String::new(),
+                -2500.0,
+            ),
+            RealizedCompact::new(
+                NaiveDate::from_ymd(2020, 7, 1),
+                200.0,
+                7000.0,
+                String::new(),
+                -5000.0,
+            ),
         ];
         assert_eq!(realized_to_compact(&set_realized()), result);
     }
@@ -165,6 +193,4 @@ mod tests {
     fn given_array_of_realized_calculate_total_gain() {
         assert_eq!(total_realized(&set_realized()), 5000.0);
     }
-
 }
-

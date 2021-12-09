@@ -1,32 +1,32 @@
-use std::collections::HashSet;
 use crate::inventory::{Inventory, InventoryType, VolumeSplit};
 use crate::realized::Realized;
 use crate::unrealized::URealized;
 use crate::MARGIN_ERROR_QUANTITY;
+use std::collections::HashSet;
 use std::fmt;
 
 /// Holding contains a set of `URealized` inventory.
-/// 
+///
 /// Inventory changes added in the opposite direction of the holding, the function will seek to first modify
 /// sizes between the added transaction inventory change and the next inventory held in the holding so
 /// they match.  The match allows a gain/loss to be realized with both an open and close of a transaction.
 /// If the inventory change is adding to inventory then no match is needed and the inventory is added to the holding.
-/// 
+///
 /// Adding inventory such as a Deposit/Transfer of Stock or Receiving Crypto must include a basis
 /// and is treated the same as a Long Transaction
-/// 
+///
 /// Removing inventory such as a Withdraw of stock or Sending Crypto has a few options
 /// when treating if it creates gain or not
-/// 
+///
 /// - Default => removal of inventory is removed at current cost basis and net of zero with no realized returned
 /// - `ADD_REALIZED_FOR_REMOVED` => same as default but will respond with zero gain realized
 /// - `REMOVED_VALUE_AT_MARKET` => assumes market price is in inventory change data as price or basis
 /// - `REMOVED_VALUE_AT_ZERO` => force value at zero proceeds taking a net loss
-/// 
+///
 /// All inventory is treated as FIFO
-/// 
+///
 /// Future options LIFO, Avg Price, HIFO?
-/// 
+///
 #[derive(Debug, Default)]
 pub struct Holding {
     unrealized: Vec<URealized>,
@@ -65,7 +65,7 @@ impl Holding {
     pub fn add_transaction<T>(&mut self, inv: &T) -> Vec<Realized>
     where
         T: Inventory + VolumeSplit<T> + Copy,
-    { 
+    {
         // same direction of inventory change or empty inventory - add to inventory and exit with zero realized
         //if self.unrealized.is_empty() || self.direction == Some(inv.itype()) {
         if self.match_direction(inv) {
@@ -75,13 +75,11 @@ impl Holding {
         } else {
             // split_matches creating equal pairs between inv change and unrealized inventory
             let split_inv = self.split_matching_first(*inv);
-            let mut realized_return = vec![];
             // create realized and remove matches as long as there is inventory
-            if split_inv.len()>1 {
-                realized_return.push(self.match_close(&split_inv[0]));
+            let mut realized_return = vec![self.match_close(&split_inv[0])];
+            // continue if there is more inventory change
+            if split_inv.len() > 1 {
                 realized_return.extend(self.add_transaction(&split_inv[1]));
-            } else {
-                realized_return.push(self.match_close(&split_inv[0]));
             }
             // Remove is handled differently depending on Configuration
             if inv.itype() == InventoryType::Remove {
@@ -104,12 +102,11 @@ impl Holding {
         gains_r
     }
 
-    fn mod_removed(&self, mut realized: Vec<Realized>) -> Vec<Realized>
-    {
+    fn mod_removed(&self, mut realized: Vec<Realized>) -> Vec<Realized> {
         if self.config.contains("REALIZED_REMOVED_VALUE_AT_COST") {
             // shows removed realized at cost basis and zero gains
             realized.iter_mut().for_each(|r| r.zero_profit());
-            realized           
+            realized
         } else if self.config.contains("REMOVED_VALUE_AT_MARKET") {
             // assumes market price is in inventory change data as price or basis
             realized
@@ -118,10 +115,9 @@ impl Holding {
             realized.iter_mut().for_each(|r| r.zero_value());
             realized
         } else {
-            vec!()
+            vec![]
         }
     }
-
 
     fn add_inventory(&mut self, ur: URealized) {
         if self.direction.is_none() {
@@ -130,27 +126,26 @@ impl Holding {
         self.unrealized.push(ur);
     }
 
-    fn match_close<T>(&mut self, inv: &T) -> Realized 
-    where T: Inventory
-    {   // can create panic if volumes don't match
+    fn match_close<T>(&mut self, inv: &T) -> Realized
+    where
+        T: Inventory,
+    {
+        // can create panic if volumes don't match
         let unrealized = self.unrealized.remove(0);
         self.check_zero_reset();
         Realized::match_close(inv, &unrealized)
     }
 
-    fn match_direction<T>(&self, inv: &T) -> bool 
-    where T: Inventory,
+    fn match_direction<T>(&self, inv: &T) -> bool
+    where
+        T: Inventory,
     {
-        if self.direction.is_none() || self.direction == Some(inv.direction_type()) {
-            true
-        } else {
-            false
-        }
+        self.direction.is_none() || self.direction == Some(inv.direction_type())
     }
 
     /// Identifying if the holding is currently in long or short position
     pub fn direction(&self) -> Option<InventoryType> {
-        self.direction.clone()
+        self.direction
     }
 
     /// Return current inventory
@@ -179,33 +174,34 @@ impl Holding {
     fn check_zero_reset(&mut self) {
         if self.unrealized.is_empty() || self.position().0.abs() < MARGIN_ERROR_QUANTITY {
             self.direction = None;
-            self.unrealized = vec!();
+            self.unrealized = vec![];
         }
     }
 
-    // builds first match between inv changes and inventory unrealized 
+    // builds first match between inv changes and inventory unrealized
     // quantity has to be in opposite directions between inv and unrealized
     // remaining inv changes returned or inventory modified to match
     fn split_matching_first<T>(&mut self, inv: T) -> Vec<T>
-    where T: Inventory + VolumeSplit<T> + Clone
+    where
+        T: Inventory + VolumeSplit<T> + Clone,
     {
         if (inv.quantity() + self.unrealized[0].quantity()).abs() < MARGIN_ERROR_QUANTITY {
-            vec!(inv)
+            vec![inv]
         } else if self.unrealized[0].quantity().abs() > inv.quantity().abs() {
             // split first inventory into two
             let (close_ur, modified_inv) = self.unrealized[0].split(inv.quantity().abs());
             self.unrealized.remove(0);
             self.unrealized.insert(0, modified_inv);
             self.unrealized.insert(0, close_ur);
-            vec!(inv)
+            vec![inv]
         } else {
             let (match_trans, remaining_trans) = inv.split(self.unrealized[0].quantity().abs());
-            vec!(match_trans, remaining_trans)
+            vec![match_trans, remaining_trans]
         }
     }
 
     /// Add configuration to holding.
-    /// 
+    ///
     /// Only options are `ADD_REALIZED_FOR_REMOVED`, `REMOVED_VALUE_AT_MARKET`, and `REMOVED_VALUE_AT_ZERO`
     pub fn add_config(&mut self, c: &str) {
         self.config.insert(c.to_owned());
@@ -214,11 +210,16 @@ impl Holding {
 
 impl fmt::Display for Holding {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Position; quantity:{:.4}, price:{:.4}, basis:{:.4}, inventory_count:{}", 
-            self.position().0, self.position().1, self.position().2, self.unrealized.len())
+        write!(
+            f,
+            "Position; quantity:{:.4}, price:{:.4}, basis:{:.4}, inventory_count:{}",
+            self.position().0,
+            self.position().1,
+            self.position().2,
+            self.unrealized.len()
+        )
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -283,21 +284,27 @@ mod tests {
             URealized::from("2020-02-01,200.0,-5000.0"),
             URealized::from("2020-03-01,300.0,-7500.0"),
         ];
-        
+
         // tests equal inv_change
         let mut holding = Holding::from(&starting_ur[..]);
         let matches = holding.split_matching_first(URealized::from("2020-04-01,-100.0,3000.0"));
         assert_eq!(matches.len(), 1);
         assert_eq!(matches[0], URealized::from("2020-04-01,-100.0,3000.0"));
         assert_eq!(holding.unrealized, starting_ur);
-        
+
         // tests smaller inv_change
         let mut holding = Holding::from(&starting_ur[..]);
         let matches = holding.split_matching_first(URealized::from("2020-04-01,-50.0,1500.0"));
         assert_eq!(matches.len(), 1);
         assert_eq!(matches[0], URealized::from("2020-04-01,-50.0,1500.0"));
-        assert_eq!(holding.unrealized[0], URealized::from("2020-01-01,50.0,-1250.0"));
-        assert_eq!(holding.unrealized[1], URealized::from("2020-01-01,50.0,-1250.0"));
+        assert_eq!(
+            holding.unrealized[0],
+            URealized::from("2020-01-01,50.0,-1250.0")
+        );
+        assert_eq!(
+            holding.unrealized[1],
+            URealized::from("2020-01-01,50.0,-1250.0")
+        );
         assert_eq!(holding.unrealized[2..3], starting_ur[1..2]);
 
         // tests larger inv_change
@@ -306,9 +313,17 @@ mod tests {
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0], URealized::from("2020-04-01,-100.0,3000.0"));
         assert_eq!(matches[1], URealized::from("2020-04-01,-250.0,7500.0"));
-        assert_eq!(holding.unrealized[0], URealized::from("2020-01-01,100.0,-2500.0"));
-        assert_eq!(holding.unrealized[1], URealized::from("2020-02-01,200.0,-5000.0"));
-        assert_eq!(holding.unrealized[2], URealized::from("2020-03-01,300.0,-7500.0"));
+        assert_eq!(
+            holding.unrealized[0],
+            URealized::from("2020-01-01,100.0,-2500.0")
+        );
+        assert_eq!(
+            holding.unrealized[1],
+            URealized::from("2020-02-01,200.0,-5000.0")
+        );
+        assert_eq!(
+            holding.unrealized[2],
+            URealized::from("2020-03-01,300.0,-7500.0")
+        );
     }
-
 }

@@ -164,7 +164,7 @@ fn transactions_that_include_remove_transfers_with_zero_gain() {
         Transaction::from("2020-07-01,short,150.0,35.0"),
     ];
     let results_r = [
-//        Realized::from("2020-06-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0"),
+        //        Realized::from("2020-06-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0"),
         Realized::from("2020-07-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0"),
         Realized::from("2020-07-01,-100.0,3500.0,2020-05-01,100.0,-2500.0,1000.0"),
     ];
@@ -193,20 +193,31 @@ fn remove_inventory_with_zerogain_show_output() {
 
     // partial send
     let gains_r = holding.add_transaction(&transactions[3]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-06-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0")));
+    assert_eq!(
+        gains_r,
+        vec!(Realized::from(
+            "2020-06-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0"
+        ))
+    );
 
     // larger send
     let gains_r = holding.add_transaction(&transactions[4]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-07-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0"),
-        Realized::from("2020-07-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0"),
-    ));
+    assert_eq!(
+        gains_r,
+        vec!(
+            Realized::from("2020-07-01,-50.0,1000.0,2020-03-01,50.0,-1000.0,0.0"),
+            Realized::from("2020-07-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0"),
+        )
+    );
 
     // equal send
     let gains_r = holding.add_transaction(&transactions[5]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-08-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0")));
+    assert_eq!(
+        gains_r,
+        vec!(Realized::from(
+            "2020-08-01,-50.0,1250.0,2020-04-01,50.0,-1250.0,0.0"
+        ))
+    );
 
     assert_eq!(holding.inventory(), results_ur);
 }
@@ -230,20 +241,31 @@ fn remove_inventory_with_gain_at_market() {
 
     // partial send
     let gains_r = holding.add_transaction(&transactions[3]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-06-01,-50.0,1750.0,2020-03-01,50.0,-1000.0,750.0")));
+    assert_eq!(
+        gains_r,
+        vec!(Realized::from(
+            "2020-06-01,-50.0,1750.0,2020-03-01,50.0,-1000.0,750.0"
+        ))
+    );
 
     // larger send
     let gains_r = holding.add_transaction(&transactions[4]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-07-01,-50.0,1750.0,2020-03-01,50.0,-1000.0,750.0"),
-        Realized::from("2020-07-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0"),
-    ));
+    assert_eq!(
+        gains_r,
+        vec!(
+            Realized::from("2020-07-01,-50.0,1750.0,2020-03-01,50.0,-1000.0,750.0"),
+            Realized::from("2020-07-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0"),
+        )
+    );
 
     // equal send
     let gains_r = holding.add_transaction(&transactions[5]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-08-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0")));
+    assert_eq!(
+        gains_r,
+        vec!(Realized::from(
+            "2020-08-01,-50.0,1750.0,2020-04-01,50.0,-1250.0,500.0"
+        ))
+    );
 
     assert_eq!(holding.inventory(), results_ur);
 }
@@ -267,20 +289,31 @@ fn remove_inventory_with_gain_at_zero_value() {
 
     // partial send
     let gains_r = holding.add_transaction(&transactions[3]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-06-01,-50.0,0.0,2020-03-01,50.0,-1000.0,-1000.0")));
+    assert_eq!(
+        gains_r,
+        vec!(Realized::from(
+            "2020-06-01,-50.0,0.0,2020-03-01,50.0,-1000.0,-1000.0"
+        ))
+    );
 
     // larger send
     let gains_r = holding.add_transaction(&transactions[4]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-07-01,-50.0,0.0,2020-03-01,50.0,-1000.0,-1000.0"),
-        Realized::from("2020-07-01,-50.0,0.0,2020-04-01,50.0,-1250.0,-1250.0"),
-    ));
+    assert_eq!(
+        gains_r,
+        vec!(
+            Realized::from("2020-07-01,-50.0,0.0,2020-03-01,50.0,-1000.0,-1000.0"),
+            Realized::from("2020-07-01,-50.0,0.0,2020-04-01,50.0,-1250.0,-1250.0"),
+        )
+    );
 
     // equal send
     let gains_r = holding.add_transaction(&transactions[5]);
-    assert_eq!(gains_r, vec!(
-        Realized::from("2020-08-01,-50.0,0.0,2020-04-01,50.0,-1250.0,-1250.0")));
+    assert_eq!(
+        gains_r,
+        vec!(Realized::from(
+            "2020-08-01,-50.0,0.0,2020-04-01,50.0,-1250.0,-1250.0"
+        ))
+    );
 
     assert_eq!(holding.inventory(), results_ur);
 }

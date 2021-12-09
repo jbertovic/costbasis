@@ -2,8 +2,8 @@ use crate::inventory::{Inventory, InventoryType, VolumeSplit};
 use chrono::NaiveDate;
 use std::fmt;
 
-/// Holds unrealized inventory. 
-/// 
+/// Holds unrealized inventory.
+///
 /// Quantity is positive for long and negative for short, value is full basis not just price.
 // open date, open quantity, open value
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -33,8 +33,14 @@ impl URealized {
 
 impl fmt::Display for URealized {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "URealized: {}, quantity: {:.4}, price: {:.4}, basis: {:.4}", 
-            self.0, self.1, -self.2/self.1, self.2)
+        write!(
+            f,
+            "URealized: {}, quantity: {:.4}, price: {:.4}, basis: {:.4}",
+            self.0,
+            self.1,
+            -self.2 / self.1,
+            self.2
+        )
     }
 }
 
@@ -113,6 +119,4 @@ mod tests {
         assert_eq!(split1, result_close);
         assert_eq!(split2, result_inv_remaining);
     }
-
-
 }

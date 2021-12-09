@@ -1,15 +1,13 @@
+use costbasis::holding::Holding;
 /// Example taking crypto buys and sells to determine realized gains and remaining inventory
 /// Example uses data from my coinbase acct and ethereum wallet
-
-use costbasis::realized::{Realized, total_realized, realized_to_compact};
-use costbasis::holding::Holding;
+use costbasis::realized::{realized_to_compact, total_realized, Realized};
 use costbasis::transaction::Transaction;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io;
 use std::io::BufRead;
-
 
 fn main() -> Result<(), Box<dyn Error>> {
     let f = File::open("./examples/CRYPTO_TRANS.csv")?;
@@ -25,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut holding = Holding::default();
         holding.add_config("REALIZED_REMOVED_VALUE_AT_COST");
         let realized = holding.extend_transactions(transactions);
-        symbol_holding_realized.insert(symbol.to_owned(),(holding, realized));
+        symbol_holding_realized.insert(symbol.to_owned(), (holding, realized));
     }
     println!("HOLDINGS CALCULATED");
 
@@ -48,7 +46,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-
 
 fn get_transactions(f: File) -> Result<HashMap<String, Vec<Transaction>>, Box<dyn Error>> {
     let mut transrec: HashMap<String, Vec<Transaction>> = HashMap::new();

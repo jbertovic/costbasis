@@ -16,9 +16,9 @@ impl std::str::FromStr for InventoryType {
 }
 
 /// Transaction used to identify inventory changes
-/// 
+///
 /// Implements Inventory and VolumeSplit traits to be used in Holdings Struct.
-/// 
+///
 /// User can implement their own Transaction Struct by implementing both Inventory and VolumeSplit
 ///
 // transaction date, transaction type, quantity, price
@@ -61,7 +61,7 @@ impl Inventory for Transaction {
     }
 
     fn itype(&self) -> InventoryType {
-        self.1.clone()
+        self.1
     }
 }
 
@@ -69,13 +69,13 @@ impl VolumeSplit<Transaction> for Transaction {
     fn split(&self, quantity: f64) -> (Transaction, Transaction) {
         let split1 = Transaction {
             0: self.0,
-            1: self.1.clone(),
+            1: self.1,
             2: quantity,
             3: self.3,
         };
         let split2 = Transaction {
             0: self.0,
-            1: self.1.clone(),
+            1: self.1,
             2: self.2 - quantity,
             3: self.3,
         };
@@ -111,7 +111,6 @@ mod tests {
         assert_eq!(trans1, result1);
         assert_eq!(trans2, result2);
     }
-
 
     #[test]
     fn test_transaction_long() {

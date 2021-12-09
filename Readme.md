@@ -51,3 +51,7 @@ FUTURE:
 - `Realized` better access to members
 - `Realized` identification of long-term vs short-term gains
 - `Realized` a way to add adjustments like wash sales and dealing with basis transfer from options relative to the underlying
+- Error checking and implementing some form of error framework
+
+QUESTIONS:
+- Do proceeds always need to be on the left.  Thinking when short an option or stock and then buy back. What does the realized gain look like?
