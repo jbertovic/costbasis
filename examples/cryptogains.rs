@@ -1,5 +1,5 @@
-use costbasis::holding::Holding;
 /// Example taking crypto buys and sells to determine realized gains and remaining inventory
+use costbasis::holding::Holding;
 use costbasis::realized::{realized_to_compact, total_realized, Realized};
 use costbasis::transaction::Transaction;
 use std::collections::HashMap;

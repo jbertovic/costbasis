@@ -1,6 +1,6 @@
-use costbasis::holding::Holding;
 /// Example taking crypto buys and sells to determine realized gains and remaining inventory
-/// Example uses data from my coinbase acct and ethereum wallet
+/// Follows one symbol in more detail
+use costbasis::holding::Holding;
 use costbasis::realized::{realized_to_compact, total_realized, Realized};
 use costbasis::transaction::Transaction;
 use std::collections::HashMap;

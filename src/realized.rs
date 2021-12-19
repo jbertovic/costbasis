@@ -5,62 +5,98 @@ use std::collections::HashMap;
 use std::fmt;
 use std::hash::Hash;
 
+
+// TODO: shrink down to one volume for Realized
+
 /// Holds a realized match of open inventory change and close inventory change along with the
 /// realized gain or loss.
 ///
 /// For now use Display trait to view
-// close date, close quantity, close value, open date, open quantity, open value, realized gain
+// close date, quantity, close value, open date, open value, realized gain
 #[derive(Debug, PartialEq)]
-pub struct Realized(NaiveDate, f64, f64, NaiveDate, f64, f64, f64);
+pub struct Realized(NaiveDate, f64, f64, NaiveDate, f64, f64);
 
 impl Realized {
+
+    pub fn new(c_date: NaiveDate, quantity: f64, c_basis: f64, o_date: NaiveDate, o_basis: f64) -> Self {
+        Realized {
+            0: c_date,
+            1: quantity,
+            2: c_basis,
+            3: o_date,
+            4: o_basis,
+            5: c_basis + o_basis,
+        }
+    }
+
     pub fn match_close<T>(inv: &T, inv_ur: &URealized) -> Realized
     where
         T: Inventory,
     {
         // todo: include panic if volumes don't match and are in opposite directions
-        Realized {
-            0: inv.date(),
-            1: inv.quantity(),
-            2: inv.basis(),
-            3: inv_ur.date(),
-            4: inv_ur.quantity(),
-            5: inv_ur.basis(),
-            6: inv_ur.basis() + inv.basis(),
-        }
+        Realized::new(inv.date(), inv.quantity(), inv.basis(), inv_ur.date(), inv_ur.basis())
+
+        // Realized {
+        //     0: inv.date(),
+        //     1: inv.quantity(),
+        //     2: inv.basis(),
+        //     3: inv_ur.date(),
+        //     4: inv_ur.quantity(),
+        //     5: inv_ur.basis(),
+        //     6: inv_ur.basis() + inv.basis(),
+        // }
     }
 
     // make crate private - only holding uses this function
     pub fn zero_profit(&mut self) {
-        self.2 = -self.5;
-        self.6 = 0.0;
+        self.2 = -self.4;
+        self.5 = 0.0;
     }
     // make crate private - only holding uses this function
     pub fn zero_value(&mut self) {
         self.2 = 0.0;
-        self.6 = self.5;
+        self.5 = self.4;
     }
+
+    // getters
+    pub fn close_date(&self) -> NaiveDate {
+        self.0
+    }
+    pub fn quantity(&self) -> f64 {
+        self.1
+    }
+    pub fn close_basis(&self) -> f64 {
+        self.2
+    }
+    pub fn open_date(&self) -> NaiveDate {
+        self.3
+    }
+    pub fn open_basis(&self) -> f64 {
+        self.4
+    }
+    pub fn realized(&self) -> f64 {
+        self.5
+    }
+
 }
 
 impl From<&str> for Realized {
     fn from(s: &str) -> Self {
         let field: Vec<&str> = s.split(',').collect();
-        Realized {
-            0: NaiveDate::parse_from_str(field[0], "%Y-%m-%d").unwrap(),
-            1: field[1].parse().unwrap(),
-            2: field[2].parse().unwrap(),
-            3: NaiveDate::parse_from_str(field[3], "%Y-%m-%d").unwrap(),
-            4: field[4].parse().unwrap(),
-            5: field[5].parse().unwrap(),
-            6: field[6].parse().unwrap(),
-        }
+        Realized::new(
+            NaiveDate::parse_from_str(field[0], "%Y-%m-%d").unwrap(),
+            field[1].parse().unwrap(),
+            field[2].parse().unwrap(),
+            NaiveDate::parse_from_str(field[3], "%Y-%m-%d").unwrap(),
+            field[4].parse().unwrap(),
+        )
     }
 }
 
 impl fmt::Display for Realized {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "close_date: {} quantity:{:.4}, proceeds:{:.2}, open_date: {}, cost_basis:{:.2}, gain_loss:{:.2}", 
-            self.0, self.1, self.2, self.3, self.5, self.6)
+            self.0, self.1, self.2, self.3, self.4, self.5)
     }
 }
 
@@ -100,7 +136,8 @@ impl From<&[Realized]> for RealizedCompact {
         let quantity = realized.iter().map(|r| r.1).sum::<f64>().abs();
         let proceeds = realized.iter().map(|r| r.2).sum();
         // add a string of dates, or insert various
-        let costs = realized.iter().map(|r| r.5).sum();
+        let costs = realized.iter().map(|r| r.4).sum();
+        //TODO - string with multiple dates?
         Self::new(date, quantity, proceeds, String::from(""), costs)
     }
 }
@@ -143,7 +180,7 @@ where
 
 /// Total realized is the sum of all profit / loss in the slice of `Realized`
 pub fn total_realized(r: &[Realized]) -> f64 {
-    r.iter().map(|r| r.6).sum()
+    r.iter().map(|r| r.5).sum()
 }
 
 #[cfg(test)]
@@ -153,11 +190,11 @@ mod tests {
 
     fn set_realized() -> [Realized; 5] {
         [
-            Realized::from("2020-04-01,-100.0,3500.0,2020-01-01,100.0,-2500.0,1000.0"),
-            Realized::from("2020-04-01,-100.0,3500.0,2020-02-01,100.0,-2500.0,1000.0"),
-            Realized::from("2020-06-01,-100.0,3500.0,2020-05-01,100.0,-2500.0,1000.0"),
-            Realized::from("2020-07-01,-100.0,3500.0,2020-05-01,100.0,-2500.0,1000.0"),
-            Realized::from("2020-07-01,-100.0,3500.0,2020-05-15,100.0,-2500.0,1000.0"),
+            Realized::from("2020-04-01,-100.0,3500.0,2020-01-01,-2500.0"),
+            Realized::from("2020-04-01,-100.0,3500.0,2020-02-01,-2500.0"),
+            Realized::from("2020-06-01,-100.0,3500.0,2020-05-01,-2500.0"),
+            Realized::from("2020-07-01,-100.0,3500.0,2020-05-01,-2500.0"),
+            Realized::from("2020-07-01,-100.0,3500.0,2020-05-15,-2500.0"),
         ]
     }
 

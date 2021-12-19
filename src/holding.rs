@@ -166,7 +166,8 @@ impl Holding {
         }
 
         if q.abs() > MARGIN_ERROR_QUANTITY {
-            p = (-b / q * 10000.0).round() / 10000.0;
+            // round to 10 decimal - TODO: can i link this to margin _error_quanity as inverse
+            p = (-b / q * 10000000000.0).round() / 10000000000.0;
         }
         (q, p, b)
     }
@@ -263,12 +264,12 @@ mod tests {
     fn position_summary() {
         let starting_ur = [
             URealized::from("2020-01-01,100.0,-2500.0"),
-            URealized::from("2020-02-01,200.0,-6000.0"),
-            URealized::from("2020-03-01,300.0,-9000.0"),
+            URealized::from("2020-02-01,200.0,-5000.0"),
+            URealized::from("2020-03-01,300.0,-7500.0"),
         ];
         let holding = Holding::from(&starting_ur[..]);
 
-        assert_eq!(holding.position(), (600.0, 29.1667, -17500.0));
+        assert_eq!(holding.position(), (600.0, 25.0, -15000.0));
     }
 
     #[test]

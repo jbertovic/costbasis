@@ -29,9 +29,9 @@
 //! // remaining inventory left in holding
 //! let results_urealized = vec![URealized::from("2020-01-01,100.0,-2500.0")];
 //!
-//! // in the form of close date, close quantity, proceeds, open date, open quantity, cost, profit
+//! // in the form of close date, quantity, proceeds, open date, cost
 //! let results_realized = [Realized::from(
-//!     "2020-02-01,-100.0,3500.0,2020-01-01,100.0,-2500.0,1000.0",
+//!     "2020-02-01,-100.0,3500.0,2020-01-01,-2500.0",
 //! )];
 //!
 //! assert_eq!(gains_realized, results_realized);
